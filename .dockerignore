@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.env*
+!.env.production.example
+Dockerfile
+.dockerignore
+pnpm-debug.log*
+src/generated/prisma
+.playwright-mcp
+.commandcode

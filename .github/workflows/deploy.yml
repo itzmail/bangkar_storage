@@ -1,0 +1,44 @@
+name: Deploy
+
+on:
+  # Deploy when a version tag is pushed (e.g. v1.0.0), or manually
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    # Only the repository owner may trigger deploys
+    if: github.actor == 'itzmail'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            cd ${{ vars.VPS_APP_DIR || '/opt/apps/bangkar' }}
+            # Fetch all tags + checkout the exact version that triggered this run
+            git fetch --all --tags --prune
+            git checkout ${{ github.ref_name }}
+            # Apply DB migrations (one-shot service)
+            docker compose -f docker-compose.prod.yml --env-file .env run --rm migrate
+            # Rebuild + restart app and infra
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+            docker image prune -f
