@@ -14,8 +14,9 @@ services:
       MARIADB_DATABASE: bangkar
       MARIADB_USER: bangkar
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:?required}
-    ports:
-      - "127.0.0.1:3306:3306"
+    # No host port binding — DB is reachable only inside the docker network
+    # (app/migrate use host "mariadb:3306"). Avoids conflicts with any
+    # host-level MySQL/MariaDB and keeps the DB off the host interface.
     volumes:
       - bangkar_mariadb_data:/var/lib/mysql
     healthcheck:
@@ -34,9 +35,12 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-bangkar_admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?required}
     command: server /data --console-address ":9001"
-    ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+    # MinIO is exposed on the docker network only; a reverse proxy
+    # (Caddy) in front publishes it at a public domain. The browser needs
+    # a publicly reachable S3 endpoint for presigned uploads/downloads.
+    expose:
+      - "9000"
+      - "9001"
     volumes:
       - bangkar_minio_data:/data
     healthcheck:
@@ -89,8 +93,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?required}
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?required}
-    ports:
-      - "127.0.0.1:3000:3000"
+    # Reverse proxy (Caddy) reaches the app inside the docker network.
+    expose:
+      - "3000"
     networks:
       - bangkar_net
 
@@ -109,9 +114,33 @@ services:
       - bangkar_net
     restart: "no"
 
+  # Caddy — automatic HTTPS reverse proxy for the app + MinIO
+  # Publishes app at ${APP_DOMAIN} and MinIO at ${MINIO_DOMAIN}
+  caddy:
+    image: caddy:2-alpine
+    container_name: bangkar-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?required}
+      MINIO_DOMAIN: ${MINIO_DOMAIN:?required}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - bangkar_caddy_data:/data
+      - bangkar_caddy_config:/config
+    networks:
+      - bangkar_net
+
 volumes:
   bangkar_mariadb_data:
   bangkar_minio_data:
+  bangkar_caddy_data:
+  bangkar_caddy_config:
 
 networks:
   bangkar_net:
