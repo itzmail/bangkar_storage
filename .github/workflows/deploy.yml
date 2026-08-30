@@ -30,6 +30,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          # Docker build of the Next.js image can take a while — allow 30 min
+          command_timeout: "30m"
           script: |
             set -e
             cd ${{ vars.VPS_APP_DIR || '/opt/apps/bangkar' }}
