@@ -65,7 +65,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # excludes generated code outside src). Copy the schema + generated dir.
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nextjs
 
