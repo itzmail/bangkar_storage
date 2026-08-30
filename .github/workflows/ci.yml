@@ -10,6 +10,15 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    # Dummy env for build-time validation only — never used to connect.
+    env:
+      DATABASE_URL: mariadb://ci:ci@localhost:3306/ci
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY_ID: ci
+      S3_SECRET_ACCESS_KEY: ci
+      S3_BUCKET: bangkar-files
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      AUTH_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
     steps:
       - uses: actions/checkout@v4
 
