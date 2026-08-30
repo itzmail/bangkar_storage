@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     # Dummy env for build-time validation only — never used to connect.
     env:
-      DATABASE_URL: mariadb://ci:ci@localhost:3306/ci
+      DATABASE_URL: mysql://ci:ci@localhost:3306/ci
       S3_ENDPOINT: http://localhost:9000
       S3_ACCESS_KEY_ID: ci
       S3_SECRET_ACCESS_KEY: ci

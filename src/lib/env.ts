@@ -13,8 +13,8 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .min(1, "DATABASE_URL is required")
-    .refine((v) => /^(mariadb|mysql):\/\//.test(v), {
-      message: "DATABASE_URL must use mariadb:// or mysql:// scheme",
+    .refine((v) => /^mysql:\/\//.test(v), {
+      message: "DATABASE_URL must use mysql:// scheme",
     }),
 
   // S3 / MinIO
