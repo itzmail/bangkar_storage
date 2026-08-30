@@ -14,7 +14,7 @@ A secure, scalable web application where authenticated users can upload, manage,
 
 - **Framework**: Next.js 14+ (App Router, Server Actions, Route Handlers, TypeScript)
 - **UI & Styling**: Tailwind CSS, Lucide React, Shadcn/Radix UI patterns
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: MariaDB / MySQL with Prisma ORM (Prisma 7)
 - **Object Storage**: S3-Compatible Storage (AWS S3 / MinIO Local via `@aws-sdk/client-s3` & `@aws-sdk/s3-request-presigner`)
 - **HTTP Client**: Axios (used in browser for progress reporting & cancelation via `AbortController`)
 - **Validation**: Zod (shared schemas across client & API boundaries)
@@ -26,8 +26,7 @@ A secure, scalable web application where authenticated users can upload, manage,
 
 ```prisma
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mysql"
 }
 
 generator client {
@@ -91,7 +90,7 @@ model File {
 [Browser] --- (1) POST /api/files/presigned-url ---> [Next.js API]
 [Browser] <--- (2) Presigned PUT URL + Key ---------- [Next.js API]
 [Browser] --- (3) PUT File Binary (w/ Progress) ----> [MinIO / S3 Storage]
-[Browser] --- (4) POST /api/files/complete ---------> [Next.js API] -> [PostgreSQL]
+[Browser] --- (4) POST /api/files/complete ---------> [Next.js API] -> [MariaDB]
 
 ```
 
@@ -163,7 +162,7 @@ All backend API routes must respond with consistent error structures:
 
 ```
 Phase 1: Environment & Core Setup
-  ├── docker-compose.yml (PostgreSQL + MinIO)
+  ├── docker-compose.yml (MariaDB + MinIO)
   ├── Prisma configuration and database migration
   └── MinIO bucket initialization & S3 SDK client helper
 
