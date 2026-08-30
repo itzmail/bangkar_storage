@@ -17,6 +17,23 @@ FROM node:22-alpine AS builder
 RUN corepack enable
 WORKDIR /app
 
+# Build-time env for Prisma generate + Next build (env.ts validates all on
+# load). Dummy values only — runtime gets real values from compose.
+ARG DATABASE_URL=mysql://build:build@localhost:3306/build
+ARG S3_ENDPOINT=http://localhost:9000
+ARG S3_ACCESS_KEY_ID=build
+ARG S3_SECRET_ACCESS_KEY=build
+ARG S3_BUCKET=bangkar-files
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ARG AUTH_SECRET=build-build-build-build-build
+ENV DATABASE_URL=$DATABASE_URL \
+    S3_ENDPOINT=$S3_ENDPOINT \
+    S3_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID \
+    S3_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY \
+    S3_BUCKET=$S3_BUCKET \
+    NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+    AUTH_SECRET=$AUTH_SECRET
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
