@@ -1,8 +1,10 @@
 # Production stack for Bangkar — MariaDB + MinIO + app
 # Required env vars (create .env on the VPS from .env.production.example):
 #   MARIADB_ROOT_PASSWORD, MARIADB_PASSWORD, MINIO_ROOT_PASSWORD,
-#   AUTH_SECRET, DATABASE_URL (host: mariadb), S3_ENDPOINT (http://minio:9000),
-#   NEXT_PUBLIC_APP_URL (public https URL)
+#   AUTH_SECRET, DATABASE_URL (host: mariadb), S3_ENDPOINT, NEXT_PUBLIC_APP_URL
+#
+# Reverse proxy: a HOST-LEVEL Caddy (systemd) proxies public domains to
+# 127.0.0.1:3100 (app) and 127.0.0.1:9100 (MinIO). No container Caddy here.
 
 services:
   mariadb:
@@ -35,12 +37,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-bangkar_admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?required}
     command: server /data --console-address ":9001"
-    # MinIO is exposed on the docker network only; a reverse proxy
-    # (Caddy) in front publishes it at a public domain. The browser needs
-    # a publicly reachable S3 endpoint for presigned uploads/downloads.
-    expose:
-      - "9000"
-      - "9001"
+    # Bound to loopback only — host Caddy proxies public S3 domain to :9100.
+    ports:
+      - "127.0.0.1:9100:9000"
+      - "127.0.0.1:9101:9001"
     volumes:
       - bangkar_minio_data:/data
     healthcheck:
@@ -84,7 +84,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:?required}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ENDPOINT: ${S3_ENDPOINT:?required}
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-bangkar_admin}
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?required}
@@ -93,9 +93,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?required}
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?required}
-    # Reverse proxy (Caddy) reaches the app inside the docker network.
-    expose:
-      - "3000"
+    # Bound to loopback only — host Caddy proxies public app domain to :3100.
+    ports:
+      - "127.0.0.1:3100:3000"
     networks:
       - bangkar_net
 
@@ -114,33 +114,9 @@ services:
       - bangkar_net
     restart: "no"
 
-  # Caddy — automatic HTTPS reverse proxy for the app + MinIO
-  # Publishes app at ${APP_DOMAIN} and MinIO at ${MINIO_DOMAIN}
-  caddy:
-    image: caddy:2-alpine
-    container_name: bangkar-caddy
-    restart: unless-stopped
-    depends_on:
-      - app
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN:?required}
-      MINIO_DOMAIN: ${MINIO_DOMAIN:?required}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - bangkar_caddy_data:/data
-      - bangkar_caddy_config:/config
-    networks:
-      - bangkar_net
-
 volumes:
   bangkar_mariadb_data:
   bangkar_minio_data:
-  bangkar_caddy_data:
-  bangkar_caddy_config:
 
 networks:
   bangkar_net:
