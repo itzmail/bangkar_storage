@@ -26,6 +26,27 @@ export const s3 = new S3Client({
 
 export const BUCKET = env.S3_BUCKET;
 
+/**
+ * Rewrite a presigned URL so browsers hit the public endpoint while the
+ * server itself talks to the internal endpoint (S3_ENDPOINT). Presigned
+ * signatures are host-independent (path + query signed), so swapping the
+ * origin keeps the URL valid.
+ */
+function toPublicUrl(url: string): string {
+  const publicEndpoint = env.S3_PUBLIC_ENDPOINT;
+  if (!publicEndpoint) return url;
+  try {
+    const u = new URL(url);
+    const p = new URL(publicEndpoint);
+    u.protocol = p.protocol;
+    u.host = p.host;
+    u.port = p.port;
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 /** Ensures the target bucket exists. Safe to call repeatedly. */
 export async function ensureBucket(): Promise<void> {
   try {
@@ -61,7 +82,7 @@ export async function createPresignedPutUrl(
   const url = await getSignedUrl(s3, command, {
     expiresIn: PRESIGNED_URL_TTL_SECONDS,
   });
-  return { url, key, expiresIn: PRESIGNED_URL_TTL_SECONDS };
+  return { url: toPublicUrl(url), key, expiresIn: PRESIGNED_URL_TTL_SECONDS };
 }
 
 export interface PresignedGet {
@@ -88,7 +109,7 @@ export async function createPresignedGetUrl(
     ResponseContentType: "application/octet-stream",
   });
   const url = await getSignedUrl(s3, command, { expiresIn: ttlSeconds });
-  return { url, expiresIn: ttlSeconds };
+  return { url: toPublicUrl(url), expiresIn: ttlSeconds };
 }
 
 /**
