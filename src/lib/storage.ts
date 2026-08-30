@@ -88,7 +88,6 @@ export async function reserveUpload(
 export async function completeUpload(
   userId: string,
   fileId: string,
-  _clientClaimedSize?: number,
 ): Promise<FileModel> {
   return await prisma.$transaction(async (tx) => {
     const file = await tx.file.findFirst({

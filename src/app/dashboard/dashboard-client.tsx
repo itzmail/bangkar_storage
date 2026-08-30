@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -52,11 +52,6 @@ export function DashboardClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setFiles(initialFiles);
-    setNextCursor(initialNextCursor);
-  }, [initialFiles, initialNextCursor]);
 
   const handleRefresh = async () => {
     setLoading(true);

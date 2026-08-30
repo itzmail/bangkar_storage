@@ -72,7 +72,7 @@ import {
 function PreviewContent() {
   const { toast } = useToast();
   const [switchVal, setSwitchVal] = useState(false);
-  const [progressVal, setProgressVal] = useState(65);
+  const [progressVal] = useState(65);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-8 space-y-12 max-w-6xl mx-auto">

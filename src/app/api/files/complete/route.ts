@@ -24,12 +24,11 @@ export async function POST(request: Request) {
       return apiError("VALIDATION_ERROR", issue?.message || "Invalid input");
     }
 
-    const { fileId, size } = parsed.data;
+    const { fileId } = parsed.data;
 
     const file = await completeUpload(
       session.user.id,
       fileId,
-      size,
     );
 
     return NextResponse.json({
